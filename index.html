@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Class 9 Exam Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', sans-serif; margin: 0; background: #f4f6f8; }
+    header { background: #222; color: #fff; padding: 14px; text-align: center; font-size: 1.3rem; font-weight:600; }
+    .container { padding: 10px; }
+    .subject { border-radius: 16px; padding: 14px; margin-bottom: 18px; color: #fff; }
+    .subject h2 { margin: 0 0 6px 0; font-size: 1.15rem; font-weight:600; }
+    .meta { font-size: 0.85rem; margin-bottom: 10px; }
+    .ratio { font-weight:600; padding:4px 10px; border-radius:20px; display:inline-block; margin-top:6px; }
+    details { background: rgba(255,255,255,0.15); border-radius: 12px; padding: 8px; margin-bottom: 8px; }
+    summary { cursor: pointer; font-weight: 500; }
+    .chapter { display: flex; align-items: center; background: rgba(255,255,255,0.2); padding: 8px; border-radius: 8px; margin: 6px 0; }
+    .chapter span { flex: 1; margin-left: 10px; }
+    .date { font-size: 0.7rem; opacity: 0.9; }
+    .total { background: #000; color: #fff; padding: 14px; border-radius: 16px; text-align: center; margin-bottom: 16px; font-weight:600; }
+
+    input[type="checkbox"]{
+      appearance: none; -webkit-appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%; border: 2px solid #fff;
+      cursor: pointer; position: relative; background: transparent;
+    }
+    input[type="checkbox"]:checked{ background: #2ecc71; border-color: #2ecc71; }
+    input[type="checkbox"]:checked::after{
+      content: '✓'; color: #fff; font-size: 13px;
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+<body>
+<header>📚 Class 9 Final Exam Progress Tracker</header>
+<div class="container">
+  <div class="total" id="totalProgress">Total Progress: 0%</div>
+  <div id="subjects"></div>
+</div>
+
+<script>
+/* ===================== EXAM DATES ===================== */
+const exams = {
+  Science: '2026-02-16',
+  English: '2026-02-20',
+  'Social Science': '2026-02-23',
+  Mathematics: '2026-02-25',
+  German: '2026-02-28',
+  'Artificial Intelligence': '2026-02-18'
+};
+
+/* ===================== SYLLABUS DATA ===================== */
+const syllabus = {
+  English: {
+    color:'#5b8def',
+    sections:{
+      'Beehive – Prose':['The Fun They Had','The Sound of Music','The Little Girl','A Truly Beautiful Mind','The Snake and the Mirror','My Childhood','Reach for the Top','Kathmandu','If I Were You'],
+      'Beehive – Poetry':['The Road Not Taken','Wind','Rain on the Roof','The Lake Isle of Innisfree','A Legend of the Northland','No Men Are Foreign','On Killing a Tree','A Slumber Did My Spirit Seal'],
+      'Moments':['The Lost Child','The Adventures of Toto','Iswaran the Storyteller','In the Kingdom of Fools','The Happy Prince','A House Is Not a Home','The Beggar']
+    }
+  },
+  Mathematics: {
+    color:'#f39c12',
+    sections:{
+      'Maths Syllabus':['Number Systems','Polynomials','Coordinate Geometry','Linear Equations in Two Variables','Euclid’s Geometry','Lines and Angles','Triangles','Quadrilaterals','Circles','Heron’s Formula','Statistics','Surface Areas and Volumes']
+    }
+  },
+  'Social Science': {
+    color:'#27ae60',
+    sections:{
+      History:['The French Revolution','Nazism','Socialism'],
+      Geography:['India – Size & Location','Physical Features','Drainage','Climate','Natural Vegetation','Population'],
+      Civics:['What is Democracy?','Constitutional Design','Electoral Politics','Working of Institutions','Democratic Rights'],
+      Economics:['People as Resource','Poverty','Food Security']
+    }
+  },
+  Science: {
+    color:'#8e44ad',
+    sections:{
+      Physics:['Motion','Force and Laws of Motion','Gravitation','Work and Energy','Sound'],
+      Chemistry:['Matter in Our Surroundings','Is Matter Around Us Pure?','Atoms and Molecules','Structure of the Atom'],
+      Biology:['The Fundamental Unit of Life','Tissues','Improvement in Food Resources']
+    }
+  },
+  German: {
+    color:'#e74c3c',
+    sections:{
+      Literature:['Hamburg, wir kommen','Ende gut, alles gut'],
+      Grammar:['Verben (Präsens, Imperativ, Futur)','Negationen','Fragesätze','Demonstrativadjektive','Personalpronomen (Akk./Dat.)','Relativpronomen','Präpositionen mit Verben','Genitiv','Nebensätze','Konjunktiv II','Trennbare Verben'],
+      Writing:['E-Mail','Dialog / SMS']
+    }
+  },
+  'Artificial Intelligence': {
+    color:'#34495e',
+    sections:{
+      'Part A – Employability Skills':['Communication Skills','Self Management Skills','ICT Skills','Entrepreneurial Skills','Green Skills'],
+      'Part B – Artificial Intelligence':['AI Reflection & Ethics','Data Literacy','Maths for AI','Introduction to Generative AI','AI Project Cycle']
+    }
+  }
+};
+
+const subjectsDiv = document.getElementById('subjects');
+
+/* ===================== HELPERS ===================== */
+function daysLeft(date){
+  const d = Math.ceil((new Date(date) - new Date()) / (1000*60*60*24));
+  return d >= 0 ? d + ' days left' : 'Exam over';
+}
+
+/* ===================== MAIN LOAD ===================== */
+function load(){
+  subjectsDiv.innerHTML = '';
+  let totalChapters = 0;
+  let completedChapters = 0;
+
+  for(const subject in syllabus){
+    const s = syllabus[subject];
+    const saved = JSON.parse(localStorage.getItem(subject) || '{}');
+    let subjectTotal = 0;
+    let subjectDone = 0;
+
+    let sectionsHTML = '';
+    for(const section in s.sections){
+      let chaptersHTML = '';
+      s.sections[section].forEach(chapter => {
+        subjectTotal++;
+        totalChapters++;
+        const doneDate = saved[chapter];
+        if(doneDate){ subjectDone++; completedChapters++; }
+
+        chaptersHTML += `
+          <div class="chapter">
+            <input type="checkbox" ${doneDate ? 'checked' : ''} onchange="toggle('${subject}','${chapter}')">
+            <span>${chapter}<div class="date">${doneDate || ''}</div></span>
+          </div>`;
+      });
+      sectionsHTML += `<details open><summary>${section}</summary>${chaptersHTML}</details>`;
+    }
+
+    const percent = Math.round((subjectDone / subjectTotal) * 100);
+    const days = Math.max(1, Math.ceil((new Date(exams[subject]) - new Date()) / (1000*60*60*24)));
+    const ratioValue = (subjectDone / days).toFixed(2);
+
+    let ratioColor = '#2ecc71';
+    if(ratioValue < 0.3) ratioColor = '#e74c3c';
+    else if(ratioValue < 0.6) ratioColor = '#f39c12';
+
+    const div = document.createElement('div');
+    div.className = 'subject';
+    div.style.background = s.color;
+    div.innerHTML = `
+      <h2>${subject}</h2>
+      <div class="meta">
+        Exam: ${new Date(exams[subject]).toDateString()} | ${daysLeft(exams[subject])}<br>
+        Completed: ${subjectDone}/${subjectTotal} (${percent}%)<br>
+        <span class="ratio" style="background:${ratioColor};">Speed: ${ratioValue} chapters/day</span>
+      </div>
+      ${sectionsHTML}`;
+
+    subjectsDiv.appendChild(div);
+  }
+
+  document.getElementById('totalProgress').innerText =
+    `Total Progress: ${Math.round((completedChapters / totalChapters) * 100)}%`;
+}
+
+/* ===================== TOGGLE ===================== */
+function toggle(subject, chapter){
+  const saved = JSON.parse(localStorage.getItem(subject) || '{}');
+  if(saved[chapter]) delete saved[chapter];
+  else saved[chapter] = new Date().toLocaleDateString();
+  localStorage.setItem(subject, JSON.stringify(saved));
+  load();
+}
+
+load();
+</script>
+</body>
+</html>
