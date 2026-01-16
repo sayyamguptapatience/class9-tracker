@@ -37,6 +37,10 @@
 <header>📚 Class 9 Final Exam Progress Tracker</header>
 <div class="container">
   <div class="total" id="totalProgress">Total Progress: 0%</div>
+  <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;">
+    <button onclick="exportData()" style="padding:8px 14px;border-radius:10px;border:none;font-weight:600;cursor:pointer;">⬇️ Export</button>
+    <button onclick="importData()" style="padding:8px 14px;border-radius:10px;border:none;font-weight:600;cursor:pointer;">⬆️ Import</button>
+  </div>
   <div id="subjects"></div>
 </div>
 
@@ -173,6 +177,33 @@ function toggle(subject, chapter){
   else saved[chapter] = new Date().toLocaleDateString();
   localStorage.setItem(subject, JSON.stringify(saved));
   load();
+
+/* ===================== EXPORT / IMPORT ===================== */
+function exportData(){
+  const data = {};
+  for(const subject in syllabus){
+    data[subject] = JSON.parse(localStorage.getItem(subject) || '{}');
+  }
+  const text = JSON.stringify(data);
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Progress copied! Paste it on another device using Import.');
+  });
+}
+
+function importData(){
+  const text = prompt('Paste exported progress data here:');
+  if(!text) return;
+  try{
+    const data = JSON.parse(text);
+    for(const subject in data){
+      localStorage.setItem(subject, JSON.stringify(data[subject]));
+    }
+    alert('Progress imported successfully');
+    load();
+  }catch(e){
+    alert('Invalid data. Please paste correct export text.');
+  }
+}
 }
 
 load();
